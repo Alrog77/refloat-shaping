@@ -37,6 +37,20 @@ typedef struct {
     float value;
 } SmoothSetpoint;
 
+// shaping 1: bound a "down" speed limit received from the config (the firmware does
+// not enforce settings.xml ranges). Called only at configure time, never in
+// the control loop. NaN and values below 1 deg/s fall back to 1 deg/s, values
+// above 100 deg/s are capped at 100.
+static inline float clamp_speed_limit_down(float v) {
+    if (!(v >= 1.0f)) {
+        return 1.0f;
+    }
+    if (v > 100.0f) {
+        return 100.0f;
+    }
+    return v;
+}
+
 void smooth_setpoint_init(SmoothSetpoint *st);
 
 void smooth_setpoint_configure(

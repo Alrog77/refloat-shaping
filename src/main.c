@@ -727,11 +727,33 @@ static void pid_control(Data *d, float dt) {
     motor_control_request_current(&d->motor_control, d->balance_current.value);
 }
 
+// shaping 0, observation only: the accelerometer and gyro as the IMU delivers them,
+// low-passed at RAW_IMU_LP_HZ so the ~10 Hz realtime polling and the CSV
+// export do not alias them. Used offline to study slope estimation; nothing
+// in the control code reads them. An invalid dt skips the update.
+#define RAW_IMU_LP_HZ 3.0f
+
+static void raw_imu_update(Data *d, const float *acc, const float *gyro, float dt) {
+    if (!(dt > 0.0f && dt < 0.1f)) {
+        return;
+    }
+    float alpha = fminf(dt * (6.2831853f * RAW_IMU_LP_HZ), 1.0f);
+    for (int i = 0; i < 3; i++) {
+        if (isfinite(acc[i])) {
+            d->raw_acc[i] += alpha * (acc[i] - d->raw_acc[i]);
+        }
+        if (isfinite(gyro[i])) {
+            d->raw_gyro[i] += alpha * (gyro[i] - d->raw_gyro[i]);
+        }
+    }
+}
+
 static void imu_ref_callback(float *acc, float *gyro, float *mag, float dt) {
     unused(mag);
     Data *d = (Data *) ARG;
 
     latency_tracker_update(&d->imu_latency_tracker, dt);
+    raw_imu_update(d, acc, gyro, dt);
 
     time_t time = vesc_system_time_ticks();
 
@@ -1203,6 +1225,10 @@ static void data_init(Data *d) {
     }
     frequency_tracker_init(&d->imu_freq_tracker, imu_sample_rate, &d->time);
     latency_tracker_init(&d->imu_latency_tracker);
+    for (int i = 0; i < 3; i++) {
+        d->raw_acc[i] = 0.0f;
+        d->raw_gyro[i] = 0.0f;
+    }
 
     balance_filter_init(&d->balance_filter);
 
@@ -1540,6 +1566,9 @@ static void cmd_runtime_tune(Data *d, unsigned char *cfg, int len) {
             // wider ranges can be set with byte[18]
             d->float_conf.atr.filter.on_speed_limit = (h2 & 0x3) + 3;
             d->float_conf.atr.filter.off_speed_limit = (h2 >> 2) + 2;
+            d->float_conf.atr.filter.on_speed_limit_down = d->float_conf.atr.filter.on_speed_limit;
+            d->float_conf.atr.filter.off_speed_limit_down =
+                d->float_conf.atr.filter.off_speed_limit;
         }
 
         split(cfg[8], &h1, &h2);
@@ -1585,6 +1614,10 @@ static void cmd_runtime_tune(Data *d, unsigned char *cfg, int len) {
             d->float_conf.torque_tilt.filter.on_speed_limit = onspd / 2;
         }
         d->float_conf.torque_tilt.filter.off_speed_limit = offspd + 3;
+        d->float_conf.torque_tilt.filter.on_speed_limit_down =
+            d->float_conf.torque_tilt.filter.on_speed_limit;
+        d->float_conf.torque_tilt.filter.off_speed_limit_down =
+            d->float_conf.torque_tilt.filter.off_speed_limit;
     }
     if (len >= 17) {
         split(cfg[16], &h1, &h2);

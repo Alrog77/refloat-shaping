@@ -2599,6 +2599,43 @@ Item {
             data = [];
             initialized = false;
             dataReady = false;
+            exportStart = 0;
+        }
+
+        // Export: samples from exportStart on, every series, as CSV text.
+        // Columns follow the data order: time in seconds from the first
+        // exported sample, the four state flags, then every realtime value
+        // (sh.*, cal.* included). Values are rounded to 4 decimals.
+        property int exportStart: 0
+
+        function exportRowCount() {
+            return Math.max(0, data.length - exportStart);
+        }
+
+        function toCsv() {
+            var start = Math.min(Math.max(exportStart, 0), data.length);
+            if (!initialized || data.length - start <= 0) {
+                return "";
+            }
+            var cols = series.slice().sort((a, b) => a.dataOrder - b.dataOrder);
+            var tps = ticksPerSecond > 0 ? ticksPerSecond : 0;
+            var header = [tps > 0 ? "t_s" : "t_ticks"];
+            for (var c = 0; c < cols.length; c++) {
+                header.push(cols[c].id);
+            }
+            var lines = [header.join(",")];
+            var t0 = data[start][0];
+            for (var r = start; r < data.length; r++) {
+                var smp = data[r];
+                var t = smp[0] - t0;
+                var row = [tps > 0 ? (t / tps).toFixed(3) : t];
+                for (var c = 0; c < cols.length; c++) {
+                    var v = smp[cols[c].dataOrder + 1];
+                    row.push(isFinite(v) ? +(+v).toFixed(4) : "");
+                }
+                lines.push(row.join(","));
+            }
+            return lines.join("\n");
         }
 
         function init(seriesIds, ticksPerSec) {
@@ -3151,6 +3188,19 @@ Item {
             }
         }
 
+        // Invisible helper: TextEdit is the portable way to reach the system
+        // clipboard from QML (the package UI cannot write files on a phone).
+        TextEdit {
+            id: clipboardHelper
+            width: 1
+            height: 1
+            opacity: 0
+            readOnly: true
+            selectByMouse: false
+            activeFocusOnPress: false
+            textFormat: TextEdit.PlainText
+        }
+
         Row {
             id: toolbar
             anchors.left: parent.left
@@ -3187,6 +3237,36 @@ Item {
 
                 onClicked: {
                     recordedPlot.show();
+                }
+            }
+
+            // Export: tap copies everything recorded (since the last mark) to
+            // the clipboard as CSV; press and hold starts a new log from now.
+            FloatingToolButton {
+                id: exportButton
+                visible: plotData.initialized
+
+                iconPath: Path {
+                    PathSvg {path: "M 15 20 L 10 20 L 10 42 L 40 42 L 40 20 L 35 20 M 25 32 L 25 8 M 17 16 L 25 8 L 33 16"}
+                }
+
+                onClicked: {
+                    var rows = plotData.exportRowCount();
+                    if (rows <= 0) {
+                        VescIf.emitStatusMessage("Export: nothing recorded yet", false);
+                        return;
+                    }
+                    var csv = plotData.toCsv();
+                    clipboardHelper.text = csv;
+                    clipboardHelper.selectAll();
+                    clipboardHelper.copy();
+                    clipboardHelper.text = "";
+                    VescIf.emitStatusMessage("Export: %1 rows (%2 kB) copied to the clipboard".arg(rows).arg(Math.round(csv.length / 1024)), true);
+                }
+
+                onPressAndHold: {
+                    plotData.exportStart = plotData.data.length;
+                    VescIf.emitStatusMessage("Export: new log started", true);
                 }
             }
 

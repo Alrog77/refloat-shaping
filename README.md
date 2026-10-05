@@ -1,3 +1,13 @@
+# Refloat Shaping (personal fork)
+
+Experimental fork of Refloat 1.3 with Dynamic Pitch KP and Booster Pitch KP (`boosterPitchKP` branch by Nico Aleman). The control loop is almost unchanged; most of the work is a UI *Sliders* page that groups existing parameters into a few rider-oriented, bounded sliders (0 = stock values). See [CHANGES-shaping.md](CHANGES-shaping.md).
+
+Tested on a single board only. Use at your own risk. Official Refloat: [github.com/lukash/refloat](https://github.com/lukash/refloat).
+
+To build: `make OLDVT=1` (requires `gcc-arm-embedded`, `make`, `vesc_tool`; `make test` runs the slider engine tests with Node).
+
+---
+
 # Refloat - VESC Package
 Refloat is a VESC Package for self-balancing skateboards. It aims to:
 - Provide a polished and full-featured user experience

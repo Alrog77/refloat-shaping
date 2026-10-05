@@ -99,6 +99,10 @@ typedef struct {
     FrequencyTracker main_freq_tracker;
     FrequencyTracker imu_freq_tracker;
     LatencyTracker imu_latency_tracker;
+    // shaping 0, observation only: IMU accelerometer (g) and gyro (deg/s) as
+    // delivered to the IMU callback, low-passed (see raw_imu_update())
+    float raw_acc[3];
+    float raw_gyro[3];
 
     float startup_pitch_trickmargin, startup_pitch_tolerance;
     float tiltback_variable, tiltback_variable_max_erpm;

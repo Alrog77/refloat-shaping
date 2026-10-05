@@ -42,8 +42,8 @@ void torque_tilt_configure(TorqueTilt *tt, const RefloatConfig *config, float fr
         0.2f,
         config->torque_tilt.filter.on_speed_limit,
         config->torque_tilt.filter.off_speed_limit,
-        config->torque_tilt.filter.on_speed_limit,
-        config->torque_tilt.filter.off_speed_limit,
+        clamp_speed_limit_down(config->torque_tilt.filter.on_speed_limit_down),
+        clamp_speed_limit_down(config->torque_tilt.filter.off_speed_limit_down),
         frequency
     );
 }

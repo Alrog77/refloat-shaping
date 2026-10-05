@@ -198,6 +198,10 @@ typedef struct {
     float off_speed_time_constant;
     float on_speed_limit;
     float off_speed_limit;
+    // shaping 1: separate limits for the "down" direction (downhill for ATR,
+    // braking for Torque Tilt). Defaults equal the "up" defaults.
+    float on_speed_limit_down;
+    float off_speed_limit_down;
 } CfgSetpointFilter;
 
 typedef struct {

@@ -65,8 +65,8 @@ void atr_configure(ATR *atr, const RefloatConfig *config, float frequency) {
         0.2f,
         config->atr.filter.on_speed_limit,
         config->atr.filter.off_speed_limit,
-        config->atr.filter.on_speed_limit,
-        config->atr.filter.off_speed_limit,
+        clamp_speed_limit_down(config->atr.filter.on_speed_limit_down),
+        clamp_speed_limit_down(config->atr.filter.off_speed_limit_down),
         frequency
     );
 }

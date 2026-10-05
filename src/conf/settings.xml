@@ -2009,6 +2009,24 @@ p, li { white-space: pre-wrap; }
             <suffix> °/s</suffix>
             <vTx>7</vTx>
         </torque_tilt.filter.on_speed_limit>
+        <torque_tilt.filter.on_speed_limit_down>
+            <longName>Max Tiltback Speed (Down)</longName>
+            <type>1</type>
+            <transmittable>1</transmittable>
+            <description>Same as the matching Up speed, but for the down direction: braking (nose lowered by Torque Tilt).</description>
+            <cDefine>CFG_DFLT_TORQUE_TILT_FILTER_ON_SPEED_LIMIT_DOWN</cDefine>
+            <editorDecimalsDouble>1</editorDecimalsDouble>
+            <editorScale>1</editorScale>
+            <editAsPercentage>0</editAsPercentage>
+            <maxDouble>100</maxDouble>
+            <minDouble>1</minDouble>
+            <showDisplay>0</showDisplay>
+            <stepDouble>2</stepDouble>
+            <valDouble>24</valDouble>
+            <vTxDoubleScale>100</vTxDoubleScale>
+            <suffix> °/s</suffix>
+            <vTx>7</vTx>
+        </torque_tilt.filter.on_speed_limit_down>
         <torque_tilt.filter.off_speed_limit>
             <longName>Max Tiltback Release Speed</longName>
             <type>1</type>
@@ -2031,6 +2049,24 @@ p, li { white-space: pre-wrap; }
             <suffix> °/s</suffix>
             <vTx>7</vTx>
         </torque_tilt.filter.off_speed_limit>
+        <torque_tilt.filter.off_speed_limit_down>
+            <longName>Max Tiltback Release Speed (Down)</longName>
+            <type>1</type>
+            <transmittable>1</transmittable>
+            <description>Same as the matching Up speed, but for the down direction: braking (nose lowered by Torque Tilt).</description>
+            <cDefine>CFG_DFLT_TORQUE_TILT_FILTER_OFF_SPEED_LIMIT_DOWN</cDefine>
+            <editorDecimalsDouble>1</editorDecimalsDouble>
+            <editorScale>1</editorScale>
+            <editAsPercentage>0</editAsPercentage>
+            <maxDouble>100</maxDouble>
+            <minDouble>1</minDouble>
+            <showDisplay>0</showDisplay>
+            <stepDouble>2</stepDouble>
+            <valDouble>24</valDouble>
+            <vTxDoubleScale>100</vTxDoubleScale>
+            <suffix> °/s</suffix>
+            <vTx>7</vTx>
+        </torque_tilt.filter.off_speed_limit_down>
         <torquetilt_strength>
             <longName>Strength</longName>
             <type>1</type>
@@ -2250,6 +2286,24 @@ p, li { white-space: pre-wrap; }
             <suffix> °/s</suffix>
             <vTx>7</vTx>
         </atr.filter.on_speed_limit>
+        <atr.filter.on_speed_limit_down>
+            <longName>Max Tiltback Speed (Down)</longName>
+            <type>1</type>
+            <transmittable>1</transmittable>
+            <description>Same as the matching Up speed, but for the down direction: downhill (nose lowered by ATR).</description>
+            <cDefine>CFG_DFLT_ATR_FILTER_ON_SPEED_LIMIT_DOWN</cDefine>
+            <editorDecimalsDouble>1</editorDecimalsDouble>
+            <editorScale>1</editorScale>
+            <editAsPercentage>0</editAsPercentage>
+            <maxDouble>100</maxDouble>
+            <minDouble>1</minDouble>
+            <showDisplay>0</showDisplay>
+            <stepDouble>2</stepDouble>
+            <valDouble>24</valDouble>
+            <vTxDoubleScale>100</vTxDoubleScale>
+            <suffix> °/s</suffix>
+            <vTx>7</vTx>
+        </atr.filter.on_speed_limit_down>
         <atr.filter.off_speed_limit>
             <longName>Max Tiltback Release Speed</longName>
             <type>1</type>
@@ -2272,6 +2326,24 @@ p, li { white-space: pre-wrap; }
             <suffix> °/s</suffix>
             <vTx>7</vTx>
         </atr.filter.off_speed_limit>
+        <atr.filter.off_speed_limit_down>
+            <longName>Max Tiltback Release Speed (Down)</longName>
+            <type>1</type>
+            <transmittable>1</transmittable>
+            <description>Same as the matching Up speed, but for the down direction: downhill (nose lowered by ATR).</description>
+            <cDefine>CFG_DFLT_ATR_FILTER_OFF_SPEED_LIMIT_DOWN</cDefine>
+            <editorDecimalsDouble>1</editorDecimalsDouble>
+            <editorScale>1</editorScale>
+            <editAsPercentage>0</editAsPercentage>
+            <maxDouble>100</maxDouble>
+            <minDouble>1</minDouble>
+            <showDisplay>0</showDisplay>
+            <stepDouble>2</stepDouble>
+            <valDouble>24</valDouble>
+            <vTxDoubleScale>100</vTxDoubleScale>
+            <suffix> °/s</suffix>
+            <vTx>7</vTx>
+        </atr.filter.off_speed_limit_down>
         <atr.transition_boost>
             <longName>Tiltback Transition Boost</longName>
             <type>1</type>
@@ -4107,12 +4179,16 @@ p, li { white-space: pre-wrap; }
         <ser>atr.filter.on_speed_time_constant</ser>
         <ser>atr.filter.off_speed_time_constant</ser>
         <ser>atr.filter.on_speed_limit</ser>
+        <ser>atr.filter.on_speed_limit_down</ser>
         <ser>atr.filter.off_speed_limit</ser>
+        <ser>atr.filter.off_speed_limit_down</ser>
         <ser>torque_tilt.filter.time_constant</ser>
         <ser>torque_tilt.filter.on_speed_time_constant</ser>
         <ser>torque_tilt.filter.off_speed_time_constant</ser>
         <ser>torque_tilt.filter.on_speed_limit</ser>
+        <ser>torque_tilt.filter.on_speed_limit_down</ser>
         <ser>torque_tilt.filter.off_speed_limit</ser>
+        <ser>torque_tilt.filter.off_speed_limit_down</ser>
         <ser>turn_tilt.filter.time_constant</ser>
         <ser>remote.filter.time_constant</ser>
         <ser>fault_pitch</ser>
@@ -4319,7 +4395,9 @@ p, li { white-space: pre-wrap; }
                     <param>torque_tilt.filter.on_speed_time_constant</param>
                     <param>torque_tilt.filter.off_speed_time_constant</param>
                     <param>torque_tilt.filter.on_speed_limit</param>
+                    <param>torque_tilt.filter.on_speed_limit_down</param>
                     <param>torque_tilt.filter.off_speed_limit</param>
+                    <param>torque_tilt.filter.off_speed_limit_down</param>
                     <param>::sep::Turn Tiltback</param>
                     <param>turntilt_strength</param>
                     <param>turntilt_angle_limit</param>
@@ -4346,7 +4424,9 @@ p, li { white-space: pre-wrap; }
                     <param>atr.filter.on_speed_time_constant</param>
                     <param>atr.filter.off_speed_time_constant</param>
                     <param>atr.filter.on_speed_limit</param>
+                    <param>atr.filter.on_speed_limit_down</param>
                     <param>atr.filter.off_speed_limit</param>
+                    <param>atr.filter.off_speed_limit_down</param>
                     <param>atr.transition_boost</param>
                     <param>::sep::Advanced</param>
                     <param>atr_amps_accel_ratio</param>

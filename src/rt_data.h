@@ -54,7 +54,13 @@
     S(imu.roll, "roll")                                                                            \
     S(footpad.adc_left, "adc_left")                                                                \
     S(footpad.adc_right, "adc_right")                                                              \
-    S(remote.input, "remote.input")
+    S(remote.input, "remote.input")                                                                \
+    S(raw_acc[0], "imu.ax")                                                                        \
+    S(raw_acc[1], "imu.ay")                                                                        \
+    S(raw_acc[2], "imu.az")                                                                        \
+    S(raw_gyro[0], "imu.gx")                                                                       \
+    S(raw_gyro[1], "imu.gy")                                                                       \
+    S(raw_gyro[2], "imu.gz")
 
 #define RT_DATA_RUNTIME_ITEMS(S, R)                                                                \
     R(setpoint, "setpoint")                                                                        \
