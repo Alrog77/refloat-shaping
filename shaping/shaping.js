@@ -1,10 +1,10 @@
-// Refloat Shaping 3 — slider engine (UI only, never in the control loop).
+// Refloat Shaping 4 — slider engine (UI only, never in the control loop).
 // Single source: the body between the two markers is copied verbatim into ui.qml.in
 // (property var shapingEngine: (function () { … })()). test.js checks both copies are identical.
 // Plain ES5 on purpose (VESC Tool JS engine).
 var ShapingEngine = (function () {
 // <shaping-engine>
-    var VERSION = "3";
+    var VERSION = "4";
 
     // Min / max of every parameter written or read (settings.xml)
     var XML = {
@@ -250,6 +250,20 @@ var ShapingEngine = (function () {
         });
     }
 
+    // Slider positions read back from a saved tune: only known sliders are kept,
+    // each position is snapped and clamped; invalid input -> null.
+    function sanitizePositions(obj) {
+        if (!obj || typeof obj !== "object" || Array.isArray(obj)) return null;
+        var out = {}, n = 0;
+        NAMES.forEach(function (name) {
+            var v = obj[name];
+            if (!v || typeof v !== "object") return;
+            out[name] = {on: v.on === true, pos: snap(name, typeof v.pos === "number" ? v.pos : NaN)};
+            n++;
+        });
+        return n ? out : null;
+    }
+
     // Every parameter read by the engine (to build the current config)
     function params() {
         var o = {mahony_kp_roll: true, dynamic_mahony_kp: true, booster_mahony_kp: true,
@@ -264,6 +278,7 @@ var ShapingEngine = (function () {
 
     return {VERSION: VERSION, SLIDERS: SLIDERS, NAMES: NAMES, defaultPos: defaultPos, snap: snap,
             compute: compute, check: check, nearest: nearest, desync: desync, params: params,
+            sanitizePositions: sanitizePositions,
             lin: lin, geo: geo};
 // </shaping-engine>
 })();

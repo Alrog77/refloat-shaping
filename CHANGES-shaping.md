@@ -17,3 +17,8 @@ Base: Refloat 1.3 with Dynamic Pitch KP and Booster Pitch KP (`boosterPitchKP` b
 - The engine is a single source (`shaping/shaping.js`) embedded in `ui.qml.in`; `make test` runs its tests (Node required).
 - Legacy protocol only (`main.c`): the ATR *Down* speeds now follow the *Up* speeds on live tune and are reset on tune defaults.
 - Build: works outside a git checkout (`GIT_HASH` fallback) and on macOS (`sed -i.bak`, portable `date`).
+
+## Shaping 4 — tunes
+
+- Slider positions are saved with each tune (on create or when overwriting its settings) and restored when the tune is applied, without any other write. Tunes without positions leave the page as is.
+- 10 tune slots instead of 6. Tune format unchanged (1.0): the extra field is ignored by stock Refloat.

@@ -1,8 +1,9 @@
-**Refloat Shaping 3** — an experimental personal fork of Refloat 1.3 with Dynamic Pitch KP and Booster Pitch KP (`boosterPitchKP` branch by Nico Aleman). The control loop is unchanged apart from the first item below.
+**Refloat Shaping 4** — an experimental personal fork of Refloat 1.3 with Dynamic Pitch KP and Booster Pitch KP (`boosterPitchKP` branch by Nico Aleman). The control loop is unchanged apart from the first item below.
 
 - **Separate uphill / downhill speeds** for ATR and Torque Tilt: four new *Down* speed parameters (Refloat Cfg), defaulting to the stock *Up* values.
 - **CSV export** in the Data tab (tap: copy everything since the mark to the clipboard; press and hold: start a new log) and six extra realtime values `imu.ax/ay/az` (g) and `imu.gx/gy/gz` (deg/s), low-passed at 3 Hz, for ride analysis.
 - **Sliders page** (new *Sliders* tab, UI only): 12 sliders that drive groups of existing parameters. Each parameter belongs to exactly one slider, every range is bounded, and 0 gives the stock values. Values are only written with the board stopped, after a preview of every change.
+- **Slider positions saved with tunes** and restored when a tune is applied; **10 tune slots** instead of 6 (set the number in Refloat preferences).
 
 **Experimental: tested on a single board**. Use at your own risk.
 

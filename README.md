@@ -4,7 +4,7 @@ Experimental fork of Refloat 1.3 with Dynamic Pitch KP and Booster Pitch KP (`bo
 
 Tested on a single board only. Use at your own risk. Official Refloat: [github.com/lukash/refloat](https://github.com/lukash/refloat).
 
-To build: `./build-shaping3.sh` (requires `gcc-arm-embedded`, `make`, `vesc_tool`; `make test` runs the slider engine tests with Node).
+To build: `./build-shaping4.sh` (requires `gcc-arm-embedded`, `make`, `vesc_tool`; `make test` runs the slider engine tests with Node).
 
 ---
 

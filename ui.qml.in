@@ -1357,7 +1357,7 @@ Item {
         readonly property string formatVersion: "%1.%2".arg(formatVersionMajor).arg(formatVersionMinor)
         readonly property string packageName: "{{PACKAGE_NAME}}"
         readonly property string packageVersion: "{{VERSION}}"
-        readonly property int maxTunes: 6
+        readonly property int maxTunes: 10 // Refloat Shaping 4: 6 -> 10
 
         signal idBackupFinished(var backup)
         signal autoBackupFinished(var backup)
@@ -1726,11 +1726,11 @@ Item {
         }
     }
 
-    // ===== Refloat Shaping 3: slider engine (UI only, never in the control loop) =====
+    // ===== Refloat Shaping 4: slider engine (UI only, never in the control loop) =====
     // Copy of the body of shaping/shaping.js between the markers; test.js checks it is identical.
     property var shapingEngine: (function () {
     // <shaping-engine>
-        var VERSION = "3";
+        var VERSION = "4";
 
         // Min / max of every parameter written or read (settings.xml)
         var XML = {
@@ -1976,6 +1976,20 @@ Item {
             });
         }
 
+        // Slider positions read back from a saved tune: only known sliders are kept,
+        // each position is snapped and clamped; invalid input -> null.
+        function sanitizePositions(obj) {
+            if (!obj || typeof obj !== "object" || Array.isArray(obj)) return null;
+            var out = {}, n = 0;
+            NAMES.forEach(function (name) {
+                var v = obj[name];
+                if (!v || typeof v !== "object") return;
+                out[name] = {on: v.on === true, pos: snap(name, typeof v.pos === "number" ? v.pos : NaN)};
+                n++;
+            });
+            return n ? out : null;
+        }
+
         // Every parameter read by the engine (to build the current config)
         function params() {
             var o = {mahony_kp_roll: true, dynamic_mahony_kp: true, booster_mahony_kp: true,
@@ -1990,6 +2004,7 @@ Item {
 
         return {VERSION: VERSION, SLIDERS: SLIDERS, NAMES: NAMES, defaultPos: defaultPos, snap: snap,
                 compute: compute, check: check, nearest: nearest, desync: desync, params: params,
+                sanitizePositions: sanitizePositions,
                 lin: lin, geo: geo};
     // </shaping-engine>
     })()
@@ -5666,10 +5681,15 @@ Item {
             if (saveTuneNameInput.text) {
                 if (!tune) {
                     tune = tuneManager.createTune(saveTuneNameInput.text, saveTuneDescInput.text, packageConfig.fetchConfig(true));
+                    // Refloat Shaping: slider positions are saved with the tune
+                    tune.shapingPositions = shapingPage.positionsForTune();
                 } else {
                     var success = tuneManager.updateTune(tune, saveTuneNameInput.text, saveTuneDescInput.text, saveTuneOverwrite.checked ? packageConfig.fetchConfig(true) : null);
                     if (!success) {
                         return;
+                    }
+                    if (saveTuneOverwrite.checked) {
+                        tune.shapingPositions = shapingPage.positionsForTune();
                     }
                 }
                 tuneManager.saveTune(tuneSlot, tune);
@@ -5691,6 +5711,14 @@ Item {
 
                 visible: editTuneDialog.tune
                 text: "Last saved: %1".arg(Qt.formatDateTime(new Date(editTuneDialog.tuneAttr("date"))));
+            }
+
+            NText {
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+
+                visible: editTuneDialog.tune
+                text: editTuneDialog.tuneAttr("shapingPositions") ? "Slider positions saved with this tune." : "No slider positions in this tune."
             }
 
             RowLayout {
@@ -7883,7 +7911,7 @@ Item {
                 Layout.fillHeight: true
 
                 GridLayout {
-                    property int spacing: 0.6 * unit
+                    property int spacing: (preferences.tuneSlotCount > 6 ? 0.3 : 0.6) * unit
                     anchors.fill: parent
                     anchors.topMargin: spacing
                     anchors.leftMargin: spacing
@@ -7925,6 +7953,10 @@ Item {
                                 if (tuneName) {
                                     var tune = tuneManager.loadTune(slot);
                                     packageConfig.applyConfig(tune);
+                                    // Refloat Shaping: restore the tune's slider positions
+                                    if (tune && tune.shapingPositions && shapingPage.tuneFormatOk(tune)) {
+                                        shapingPage.restorePositions(tune.shapingPositions);
+                                    }
                                 }
                             }
 
@@ -8393,6 +8425,31 @@ Item {
 
                 function realign(key) {
                     setOn(key, true);
+                }
+
+                // Same rule as packageConfig.versionCompatible, without a message: was the tune applied?
+                function tuneFormatOk(tune) {
+                    if (!tune || !tune.version) return false;
+                    var v = versionMajorMinor(tune.version);
+                    return v[0] === tuneManager.formatVersionMajor && v[1] <= tuneManager.formatVersionMinor;
+                }
+
+                // Positions to save with a tune (a copy, never the live object)
+                function positionsForTune() {
+                    return shapingEngine.sanitizePositions(JSON.parse(JSON.stringify(st)));
+                }
+
+                // Positions read from a tune: replace the page's positions, nothing is written to the board
+                function restorePositions(p) {
+                    var clean = shapingEngine.sanitizePositions(p);
+                    if (!clean) return;
+                    st = clean;
+                    info = ({});
+                    message = "Slider positions restored from the tune.";
+                    blockErrors = [];
+                    warnings = [];
+                    save();
+                    rev++;
                 }
 
                 function detailText(key) {

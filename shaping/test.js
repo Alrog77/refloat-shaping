@@ -122,6 +122,22 @@ ok(Object.keys(rs.changes).every(function (k) { return rs.sources[k] && rs.sourc
 ok(rs.sources.brkbooster_mahony_kp.join() === "brakeFeel,accelFeelSpeed,accelFeel", "brake Booster sources: " + rs.sources.brkbooster_mahony_kp);
 ok(rs.sources["atr.filter.time_constant"].join() === "speedUp,speedDown", "shared smoothing sources");
 
+// 9b) slider positions saved with a tune
+var tuneLike = JSON.parse(JSON.stringify(Object.assign({}, {name: "Street", settings: [{name: "kp", value: 20}]},
+    {shapingPositions: E.sanitizePositions(st10)})));
+var back = E.sanitizePositions(tuneLike.shapingPositions);
+ok(JSON.stringify(back) === JSON.stringify(E.sanitizePositions(st10)), "reference positions identical after a tune JSON round trip");
+ok(E.NAMES.every(function (n) { return back[n].on === true && back[n].pos === s10[n]; }), "reference positions restored exactly");
+var restored = E.compute(back, cfg10);
+ok(Object.keys(restored.diff).length === 0, "after restore, nothing to write on the tune config");
+ok(E.NAMES.every(function (n) { return E.desync(n, back, cfg10).length === 0; }), "after restore, no slider out of sync");
+ok(E.sanitizePositions(null) === null && E.sanitizePositions("x") === null && E.sanitizePositions([1, 2]) === null &&
+   E.sanitizePositions({}) === null && E.sanitizePositions({inconnu: {on: true, pos: 3}}) === null, "invalid positions: ignored");
+var junk = E.sanitizePositions({accelFeel: {on: "oui", pos: 99}, stance: {on: true, pos: 0.31}, responseLimit: {on: true, pos: "8"},
+    carveTrim: {on: true}, autre: {on: true, pos: 1}});
+ok(junk.accelFeel.on === false && junk.accelFeel.pos === 10 && junk.stance.pos === 0.4 && junk.responseLimit.pos === 8 &&
+   junk.carveTrim.pos === 0 && !("autre" in junk), "out-of-range or mistyped positions: clamped or neutral " + JSON.stringify(junk));
+
 // 10) non-regression against a previous ui.qml.in (Torque Tilt limit excluded)
 var refPath = process.argv[3];
 if (refPath && fs.existsSync(refPath)) {
