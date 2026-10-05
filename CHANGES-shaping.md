@@ -1,6 +1,6 @@
 # Refloat Shaping — changes
 
-Base: Refloat 1.3 with Dynamic Pitch KP and Booster Pitch KP (`boosterPitchKP` branch by Nico Aleman).
+Base: Refloat 1.3 with Dynamic Pitch KP and Booster Pitch KP (`v1.3-mkp_booster` branch by Nico Aleman).
 
 ## Shaping 1 — separate uphill / downhill speeds
 

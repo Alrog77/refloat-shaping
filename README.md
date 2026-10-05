@@ -1,6 +1,6 @@
 # Refloat Shaping (personal fork)
 
-Experimental fork of Refloat 1.3 with Dynamic Pitch KP and Booster Pitch KP (`boosterPitchKP` branch by Nico Aleman). The control loop is almost unchanged; most of the work is a UI *Sliders* page that groups existing parameters into a few rider-oriented, bounded sliders (0 = stock values). See [CHANGES-shaping.md](CHANGES-shaping.md).
+Experimental fork of Refloat 1.3 with Dynamic Pitch KP and Booster Pitch KP (`v1.3-mkp_booster` branch by Nico Aleman). The control loop is almost unchanged; most of the work is a UI *Sliders* page that groups existing parameters into a few rider-oriented, bounded sliders (0 = stock values). See [CHANGES-shaping.md](CHANGES-shaping.md).
 
 Tested on a single board only. Use at your own risk. Official Refloat: [github.com/lukash/refloat](https://github.com/lukash/refloat).
 

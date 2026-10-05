@@ -1,4 +1,4 @@
-**Refloat Shaping 4** — an experimental personal fork of Refloat 1.3 with Dynamic Pitch KP and Booster Pitch KP (`boosterPitchKP` branch by Nico Aleman). The control loop is unchanged apart from the first item below.
+**Refloat Shaping 4** — an experimental personal fork of Refloat 1.3 with Dynamic Pitch KP and Booster Pitch KP (`v1.3-mkp_booster` branch by Nico Aleman). The control loop is unchanged apart from the first item below.
 
 - **Separate uphill / downhill speeds** for ATR and Torque Tilt: four new *Down* speed parameters (Refloat Cfg), defaulting to the stock *Up* values.
 - **CSV export** in the Data tab (tap: copy everything since the mark to the clipboard; press and hold: start a new log) and six extra realtime values `imu.ax/ay/az` (g) and `imu.gx/gy/gz` (deg/s), low-passed at 3 Hz, for ride analysis.
