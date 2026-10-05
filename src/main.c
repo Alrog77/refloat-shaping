@@ -1637,6 +1637,10 @@ static void cmd_runtime_tune(Data *d, unsigned char *cfg, int len) {
         if ((h1 > 0) && (h2 > 0)) {
             d->float_conf.atr.filter.on_speed_limit = h1 * 2;
             d->float_conf.atr.filter.off_speed_limit = h2 * 2;
+            // shaping 3: Down speeds follow Up on the legacy protocol, as for cfg[7]
+            d->float_conf.atr.filter.on_speed_limit_down = d->float_conf.atr.filter.on_speed_limit;
+            d->float_conf.atr.filter.off_speed_limit_down =
+                d->float_conf.atr.filter.off_speed_limit;
         }
     }
 
@@ -1673,6 +1677,8 @@ static void cmd_tune_defaults(Data *d) {
     d->float_conf.atr_angle_limit = CFG_DFLT_ATR_ANGLE_LIMIT;
     d->float_conf.atr.filter.on_speed_limit = CFG_DFLT_ATR_FILTER_ON_SPEED_LIMIT;
     d->float_conf.atr.filter.off_speed_limit = CFG_DFLT_ATR_FILTER_OFF_SPEED_LIMIT;
+    d->float_conf.atr.filter.on_speed_limit_down = CFG_DFLT_ATR_FILTER_ON_SPEED_LIMIT_DOWN;
+    d->float_conf.atr.filter.off_speed_limit_down = CFG_DFLT_ATR_FILTER_OFF_SPEED_LIMIT_DOWN;
     d->float_conf.atr.transition_boost = CFG_DFLT_ATR_TRANSITION_BOOST;
     d->float_conf.atr_filter = CFG_DFLT_ATR_FILTER;
     d->float_conf.atr_amps_accel_ratio = CFG_DFLT_ATR_AMPS_ACCEL_RATIO;

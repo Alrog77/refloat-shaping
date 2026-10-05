@@ -31,8 +31,8 @@ package_README-gen.md: package_README.md version
 	echo "" >> $@
 	echo "### Build Info" >> $@
 	echo "- Version: ${VERSION}" >> $@
-	echo "- Build Date: `date --rfc-3339=seconds`" >> $@
-	echo "- Git Commit: #`git rev-parse --short HEAD`" >> $@
+	echo "- Build Date: `date -u '+%Y-%m-%d %H:%M:%S+00:00'`" >> $@
+	echo "- Git Commit: #`git rev-parse --short HEAD 2>/dev/null || echo none`" >> $@
 
 ui.qml: ui.qml.in package_name version
 	cat $< | \
@@ -44,4 +44,8 @@ clean:
 	rm -f refloat.vescpkg package_README-gen.md ui.qml
 	$(MAKE) -C src clean
 
-.PHONY: all clean src
+# Refloat Shaping: slider engine tests (requires Node, not part of the build)
+test:
+	node shaping/test.js ui.qml.in
+
+.PHONY: all clean src test

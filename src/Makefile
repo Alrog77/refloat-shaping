@@ -29,7 +29,7 @@ $(REFLOAT_SOURCES): $(CONF_GEN_HEADERS) conf/conf_general.h
 $(CONF_GEN_FILES) &: conf/settings.xml
 	$(VESC_TOOL) --xmlConfToCode conf/settings.xml
 	# !!! make xml config loading in vesc_tool work with LTO !!!
-	sed -i "s/^uint8_t data_/__attribute__((used)) uint8_t data_/g" conf/confxml.c
+	sed -i.bak "s/^uint8_t data_/__attribute__((used)) uint8_t data_/g" conf/confxml.c && rm -f conf/confxml.c.bak
 
 PACKAGE_NAME=`cat ../package_name | cut -c-20`
 VERSION=`cat ../version`
@@ -37,7 +37,7 @@ MAJOR=`cat ../version | cut -d. -f1`
 MINOR=`cat ../version | cut -d. -f2`
 PATCH=`cat ../version | cut -d. -f3 | cut -d- -f1`
 SUFFIX=`cat ../version | cut -d. -f3 | cut -d- -f2- | cut -c-20`
-GIT_HASH=`git rev-parse --short=8 HEAD | cut -c-8`
+GIT_HASH=`(git rev-parse --short=8 HEAD 2>/dev/null || echo 00000000) | cut -c-8`
 
 conf/conf_general.h: conf/conf_general.h.in ../package_name ../version
 	cat $< | \
