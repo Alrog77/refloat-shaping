@@ -1,10 +1,16 @@
 # Refloat Shaping (personal fork)
 
-Experimental fork of Refloat 1.3 with Dynamic Pitch KP and Booster Pitch KP (`v1.3-mkp_booster` branch by Nico Aleman). The control loop is almost unchanged; most of the work is a UI *Sliders* page that groups existing parameters into a few rider-oriented, bounded sliders (0 = stock values). See [CHANGES-shaping.md](CHANGES-shaping.md) and the [sliders reference](docs/sliders.md).
+Experimental fork of Refloat 1.3 with Dynamic Pitch KP and Booster Pitch KP (`v1.3-mkp_booster` branch by Nico Aleman). The control loop is almost unchanged; most of the work is a UI *Sliders* page that groups existing parameters into a few rider-oriented, bounded sliders (0 = stock values, except the Booster targets).
+
+- **Sliders** inspired by the Future Motion ride settings as described by Neil Bennett ([docs/fm-settings.md](docs/fm-settings.md), values in [docs/sliders.md](docs/sliders.md)), with built-in stability: capped braking stiffness, one Max Angle for ATR and Torque Tilt, Torque Tilt limited automatically on a stiff board.
+- **Non-linear battery estimate** for Molicel P42A packs (discharge curves, sag-corrected), display only.
+- Separate uphill / downhill ATR and Torque Tilt speeds, CSV log export, 10 tune slots with slider positions.
+
+See [CHANGES-shaping.md](CHANGES-shaping.md).
 
 Tested on a single board only. Use at your own risk. Official Refloat: [github.com/lukash/refloat](https://github.com/lukash/refloat).
 
-To build: `./build-shaping4.sh` (requires `gcc-arm-embedded`, `make`, `vesc_tool`; `make test` runs the slider engine tests with Node).
+To build: `./build-shaping6.2.sh` (requires `gcc-arm-embedded`, `make`, `vesc_tool`; `make test` runs the slider engine tests with Node).
 
 ---
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds Refloat Shaping 4: produces refloat-shaping4.vescpkg in this folder.
+# Builds Refloat Shaping 6.2: produces refloat-shaping6.2.vescpkg in this folder.
 set -e
 cd "$(dirname "$0")"
 export PATH="$HOME/bin:$PATH"
@@ -8,7 +8,7 @@ VESC_TOOL="${VESC_TOOL:-$HOME/bin/vesc_tool}"
 [ -x "$VESC_TOOL" ] || VESC_TOOL="$(command -v vesc_tool || true)"
 [ -n "$VESC_TOOL" ] && [ -x "$VESC_TOOL" ] || { echo "ERROR: vesc_tool not found (set VESC_TOOL=/path/to/vesc_tool)"; exit 1; }
 command -v arm-none-eabi-gcc >/dev/null || { echo "ERROR: arm-none-eabi-gcc not found"; exit 1; }
-[ "$(cat version)" = "1.3.0-boosterKP-shaping4" ] || { echo "ERROR: unexpected version file"; exit 1; }
+[ "$(cat version)" = "1.3.0-boosterKP-shaping6-2" ] || { echo "ERROR: unexpected version file"; exit 1; }
 
 # Slider engine tests (if Node is installed): stop on any failure
 if command -v node >/dev/null 2>&1; then
@@ -20,6 +20,6 @@ fi
 make clean >/dev/null
 make OLDVT=1 VESC_TOOL="$VESC_TOOL"
 [ -f refloat.vescpkg ] || { echo "ERROR: package not produced"; exit 1; }
-mv -f refloat.vescpkg refloat-shaping4.vescpkg
-ls -l refloat-shaping4.vescpkg
-echo "OK: $(pwd)/refloat-shaping4.vescpkg"
+mv -f refloat.vescpkg refloat-shaping6.2.vescpkg
+ls -l refloat-shaping6.2.vescpkg
+echo "OK: $(pwd)/refloat-shaping6.2.vescpkg"

@@ -1,16 +1,17 @@
-// Refloat Shaping 4 — slider engine (UI only, never in the control loop).
+// Refloat Shaping 6.2 — slider engine (UI only, never in the control loop).
 // Single source: the body between the two markers is copied verbatim into ui.qml.in
 // (property var shapingEngine: (function () { … })()). test.js checks both copies are identical.
 // Plain ES5 on purpose (VESC Tool JS engine).
 var ShapingEngine = (function () {
 // <shaping-engine>
-    var VERSION = "4";
+    var VERSION = "6.2";
 
     // Min / max of every parameter written or read (settings.xml)
     var XML = {
         kp: [0, 40], kp2: [0, 3], mahony_kp: [0.2, 3], mahony_kp_roll: [0, 3], dynamic_mahony_kp: [0, 3],
         kp_brake: [0.2, 3], kp2_brake: [0, 3],
-        booster_angle: [0, 15], booster_mahony_kp: [0, 3], brkbooster_angle: [0, 15], brkbooster_mahony_kp: [0, 3],
+        booster_angle: [0, 15], booster_mahony_kp: [0, 3], brkbooster_angle: [0, 15], brkbooster_ramp: [1, 10],
+        brkbooster_mahony_kp: [0, 3],
         torquetilt_start_current: [0, 100], torquetilt_angle_limit: [0, 30],
         torquetilt_strength: [0, 1], torquetilt_strength_regen: [0, 1],
         atr_strength_up: [0, 3.5], atr_strength_down: [0, 3.5], atr_angle_limit: [0, 30],
@@ -38,7 +39,18 @@ var ShapingEngine = (function () {
     var SPEEDS_DN = SPEEDS_UP.map(function (n) { return n + "_down"; });
 
     var DYN_FLOOR = 1.2, BOOST_FLOOR = 0.8, KP_MARGIN = 0.1, REL_MIN = 4;
-    var TT_LIM_MAX = 8, ATR_LIM_MAX = 18, ATR_LIM_WARN = 10, TC_F = [0.5, 2.0];
+    var BRK_KP_10 = 0.82;   // brake Booster target at Brake Feel +10 (absolute, validated on the board)
+    var BOOST_AT_0 = 0.95;  // Booster targets at slider 0: 95 % of the effective KP (off only at -10)
+    var ACC_BOOST_10 = 0.80; // accel Booster target at Accel Feel +10: 80 % of the effective KP
+    var BRK_REF_KP = 20;     // Brake Feel sets the braking stiffness (Angle P x Angle P (Braking)) as if Angle P were 20
+    var KP_DIV_MIN = 5;      // divisor floor for Angle P (Braking) = stiffness / Angle P
+    // Torque Tilt / stiffness loop: above these products the board pumped under braking on rides
+    // (4.9: calm; 5.8: slight; 9.6: clear; 13: strong). Accel side: 3.4 validated, 4.8 calm but little data.
+    // Shaping 6.2: the written Torque Tilt strengths are capped automatically so the products stay below.
+    var TT_LOOP_BRK = 5;     // Torque Tilt regen strength x Angle P x Angle P (Braking)
+    var TT_LOOP_ACC = 4.5;   // Torque Tilt strength x Angle P
+    var TT_LOOP_TOL = 1.005; // rounding of the written values
+    var TT_LIM_MAX = 8, ATR_LIM_MAX = 18, ATR_LIM_WARN = 10, TC_F = [0.7, 1.4];
     var EPS_CHANGE = 1e-4;   // below this: not a change (values read back as float32)
     var EPS_DESYNC = 0.005;  // tolerance for "differs from current config"
 
@@ -52,28 +64,32 @@ var ShapingEngine = (function () {
     // Derived values (Dynamic Pitch KP, Booster targets, shared smoothing): see compute().
     var SLIDERS = {
         accelFeel: {min: -10, max: 10, f: function (s) {
-            return {kp: lin(s, 14, 20, 30), mahony_kp: lin(s, 2.6, 2.0, 1.5)}; }},
+            return {kp: lin(s, 14, 20, 24), mahony_kp: lin(s, 2.6, 2.0, 1.8)}; }},
         accelFeelSpeed: {min: 0, max: 10, f: function (s) { return {}; }},
         brakeFeel: {min: -10, max: 10, f: function (s) {
-            return {kp_brake: lin(s, 0.6, 1.0, 1.5), kp2_brake: lin(s, 0.6, 1.0, 1.3)}; }},
+            // kp_brake here is the braking stiffness ratio; the written value is derived in compute().
+            // Brake Booster start angle and ramp: stock at 0 and below, earlier and shorter above
+            return {kp_brake: lin(s, 0.8, 1.0, 3.0), kp2_brake: lin(s, 0.8, 1.0, 1.6),
+                    brkbooster_angle: lin(Math.max(s, 0), 8, 8, 2), brkbooster_ramp: lin(Math.max(s, 0), 4, 4, 2)}; }},
         inputPlay: {min: -10, max: 10, f: function (s) {
-            var a = lin(s, 2, 8, 12);
-            return {kp2: lin(s, 1.0, 0.6, 0.3), torquetilt_start_current: lin(s, 5, 15, 35),
-                    booster_angle: a, brkbooster_angle: a}; }},
+            return {kp2: lin(s, 0.8, 0.6, 0.45), torquetilt_start_current: lin(s, 10, 15, 25),
+                    booster_angle: lin(s, 5, 8, 10)}; }},
         carveTrim: {min: 0, max: 10, f: function (s) { return {turntilt_strength: s}; }},
         carveTrimSpeed: {min: -10, max: 10, f: function (s) {
-            return {"turn_tilt.filter.time_constant": geo(s, 0.40, 0.20, 0.08)}; }},
+            return {"turn_tilt.filter.time_constant": geo(s, 0.30, 0.20, 0.12)}; }},
         forceUp: {min: -10, max: 10, f: function (s) {
-            return {atr_strength_up: lin(s, 0.3, 1.0, 2.2), torquetilt_strength: lin(s, 0.03, 0.10, 0.25)}; }},
+            return {atr_strength_up: lin(s, 0.5, 1.0, 1.8), torquetilt_strength: lin(s, 0.05, 0.10, 0.20)}; }},
         forceDown: {min: -10, max: 10, f: function (s) {
-            return {atr_strength_down: lin(s, 0.2, 0.5, 1.6), torquetilt_strength_regen: lin(s, 0.03, 0.10, 0.25)}; }},
+            return {atr_strength_down: lin(s, 0.3, 0.5, 1.3), torquetilt_strength_regen: lin(s, 0.05, 0.10, 0.22)}; }},
         speedUp: {min: -10, max: 10, f: function (s) {
-            var v = geo(s, 12, 24, 60), o = {}; SPEEDS_UP.forEach(function (n) { o[n] = v; }); return o; }},
+            var v = geo(s, 16, 24, 36), o = {}; SPEEDS_UP.forEach(function (n) { o[n] = v; }); return o; }},
         speedDown: {min: -10, max: 10, f: function (s) {
-            var v = geo(s, 12, 24, 60), o = {}; SPEEDS_DN.forEach(function (n) { o[n] = v; }); return o; }},
-        // Response Limit drives the ATR only (Torque Tilt keeps its own limit from the config)
-        responseLimit: {min: 2, max: 18, step: 0.5, def: 8, f: function (s) { return {atr_angle_limit: s}; }},
-        stance: {min: -3, max: 3, step: 0.2, f: function (s) { return {tiltback_constant: s}; }}
+            var v = geo(s, 16, 24, 36), o = {}; SPEEDS_DN.forEach(function (n) { o[n] = v; }); return o; }},
+        // Response Limit = one Max Angle for the whole correction (ATR and Torque Tilt), 0 = off.
+        // Torque Tilt limit kept at 8° max.
+        responseLimit: {min: 0, max: 18, step: 0.5, def: 8, f: function (s) {
+            return {atr_angle_limit: s, torquetilt_angle_limit: Math.min(s, TT_LIM_MAX)}; }},
+        stance: {min: -2, max: 2, step: 0.2, f: function (s) { return {tiltback_constant: s}; }}
     };
     var NAMES = Object.keys(SLIDERS);
 
@@ -113,28 +129,76 @@ var ShapingEngine = (function () {
             TCS.forEach(function (key) { put(key, cl(NICO_TC[key] / f, 0.01, 0.5), from); });
         }
 
-        // Dynamic Pitch KP: fraction of the final Pitch KP (100 % at 0, 65 % at +10), floor 1.2
+        // Angle P (Braking): Brake Feel sets a braking stiffness (Angle P x Angle P (Braking)) that does not
+        // depend on Accel Feel and never exceeds 20 x 3 = 60: Angle P (Braking) = 20 x ratio / Angle P,
+        // kept within the settings.xml bounds. Equal to the stock value when Angle P is 20.
+        if (isOn(state, "brakeFeel")) {
+            var ratio = SLIDERS.brakeFeel.f(posOf(state, "brakeFeel")).kp_brake;
+            var kpNow = fin(merged.kp) ? Math.max(merged.kp, KP_DIV_MIN) : BRK_REF_KP;
+            put("kp_brake", cl(BRK_REF_KP * ratio / kpNow, XML.kp_brake[0], XML.kp_brake[1]),
+                isOn(state, "accelFeel") ? ["brakeFeel", "accelFeel"] : ["brakeFeel"]);
+        }
+
+        // Torque Tilt strengths capped by the stiffness (stability of the Torque Tilt loop), whenever a slider
+        // that moves them or the stiffness is on. Rounded down so the product stays below the limit.
+        var notes = [];
+        function onOf(names) { return names.filter(function (n) { return isOn(state, n); }); }
+        function capTT(key, limit, stiff, owners, label) {
+            var from = onOf(owners);
+            if (!from.length || !fin(merged[key]) || !fin(stiff) || stiff <= 0) return;
+            var cap = Math.floor(limit / stiff * 100) / 100;
+            if (merged[key] > cap + 1e-9) {
+                notes.push(label + ": Torque Tilt strength limited to " + cap.toFixed(2) + " instead of " +
+                           r2(merged[key]).toFixed(2) + " (stability with Accel Feel / Brake Feel)");
+                put(key, cap, from);
+            }
+        }
+        capTT("torquetilt_strength_regen", TT_LOOP_BRK,
+              (fin(merged.kp) ? merged.kp : 0) * (fin(merged.kp_brake) ? merged.kp_brake : 0),
+              ["forceDown", "brakeFeel", "accelFeel"], "Downhill strength");
+        capTT("torquetilt_strength", TT_LOOP_ACC, fin(merged.kp) ? merged.kp : 0,
+              ["forceUp", "accelFeel"], "Uphill strength");
+
+        // Dynamic Pitch KP: fraction of the final Pitch KP (100 % at 0, 80 % at +10), floor 1.2.
+        // Off (0) at 0 and when the slider is disabled.
         var kpFrom = isOn(state, "accelFeel") ? ["accelFeel"] : [];
-        if (isOn(state, "accelFeelSpeed")) {
+        if (!isOn(state, "accelFeelSpeed")) put("dynamic_mahony_kp", 0, ["accelFeelSpeed"]);
+        else {
             var s = posOf(state, "accelFeelSpeed");
-            put("dynamic_mahony_kp", s === 0 ? 0 : Math.max(merged.mahony_kp * (1 - 0.035 * s), DYN_FLOOR),
+            put("dynamic_mahony_kp", s === 0 ? 0 : Math.max(merged.mahony_kp * (1 - 0.02 * s), DYN_FLOOR),
                 ["accelFeelSpeed"].concat(kpFrom));
         }
-        // Booster targets: fraction of the effective KP (lower of Pitch KP and Dynamic Pitch KP)
+        // Booster targets, from the effective KP (lower of Pitch KP and Dynamic Pitch KP):
+        // off (0) at -10 and when the slider is disabled; 100 % -> 95 % of it from -10 to 0
+        // (100 % = no effect, so no jump); above 0, accel down to 80 % of it, brake down to 0.82.
         function uniq(a) { return a.filter(function (v, i) { return a.indexOf(v) === i; }); }
         var dynFrom = uniq((src.dynamic_mahony_kp || []).concat(kpFrom));
         var kpref = merged.dynamic_mahony_kp > 0 ? Math.min(merged.mahony_kp, merged.dynamic_mahony_kp) : merged.mahony_kp;
-        function boost(s) { return s <= 0 ? 0 : Math.max(kpref * (1 - 0.04 * s), BOOST_FLOOR); }
+        function boostLow(s) { return kpref * (1 - (1 - BOOST_AT_0) * (s + 10) / 10); }
+        function boost(s) {
+            if (s <= -10) return 0;
+            var t = s <= 0 ? boostLow(s) : kpref * (BOOST_AT_0 + (ACC_BOOST_10 - BOOST_AT_0) * s / 10);
+            return Math.max(t, BOOST_FLOOR);
+        }
+        function brkBoost(s) {
+            if (s <= -10) return 0;
+            var k0 = kpref * BOOST_AT_0;
+            return Math.max(s <= 0 ? boostLow(s) : k0 + (BRK_KP_10 - k0) * s / 10, BOOST_FLOOR);
+        }
         if (isOn(state, "accelFeel"))
             put("booster_mahony_kp", boost(posOf(state, "accelFeel")), uniq(["accelFeel"].concat(dynFrom)));
+        else put("booster_mahony_kp", 0, ["accelFeel"]);
         if (isOn(state, "brakeFeel"))
-            put("brkbooster_mahony_kp", boost(posOf(state, "brakeFeel")), uniq(["brakeFeel"].concat(dynFrom)));
+            put("brkbooster_mahony_kp", brkBoost(posOf(state, "brakeFeel")), uniq(["brakeFeel"].concat(dynFrom)));
+        else put("brkbooster_mahony_kp", 0, ["brakeFeel"]);
 
         var diff = {};
         Object.keys(out).forEach(function (key) {
             if (!fin(cur[key]) || Math.abs(out[key] - cur[key]) > EPS_CHANGE) diff[key] = out[key];
         });
-        return {changes: out, diff: diff, sources: src, merged: merged, errors: check(merged, Object.keys(out))};
+        var errors = check(merged, Object.keys(out));
+        errors.warn = notes.concat(errors.warn);
+        return {changes: out, diff: diff, sources: src, merged: merged, errors: errors};
     }
 
     // {block, warn}. A rule blocks if it involves a written parameter;
@@ -169,6 +233,21 @@ var ShapingEngine = (function () {
                      " to recompute the target, or keep a higher effective KP",
                      [k, "mahony_kp", "dynamic_mahony_kp"]);
             });
+        }
+        // Stability of the Torque Tilt loop: a strong Torque Tilt on a stiff board oscillates
+        if (known(["torquetilt_strength_regen", "kp", "kp_brake"])) {
+            var gb = m.torquetilt_strength_regen * m.kp * m.kp_brake;
+            rule(gb <= TT_LOOP_BRK * TT_LOOP_TOL,
+                 "Downhill strength too high for this Brake Feel / Accel Feel: Torque Tilt regen x braking stiffness = " +
+                 r2(gb) + " (max " + TT_LOOP_BRK + ", the board oscillates when braking). Lower downhill strength or Brake Feel.",
+                 ["torquetilt_strength_regen", "kp", "kp_brake"]);
+        }
+        if (known(["torquetilt_strength", "kp"])) {
+            var ga = m.torquetilt_strength * m.kp;
+            rule(ga <= TT_LOOP_ACC * TT_LOOP_TOL,
+                 "Uphill strength too high for this Accel Feel: Torque Tilt strength x Angle P = " + r2(ga) +
+                 " (max " + TT_LOOP_ACC + "). Lower uphill strength or Accel Feel.",
+                 ["torquetilt_strength", "kp"]);
         }
         SPEEDS_UP.concat(SPEEDS_DN).forEach(function (k) {
             if (fin(m[k])) rule(m[k] >= REL_MIN, k + " below 4 °/s", [k]);

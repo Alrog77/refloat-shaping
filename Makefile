@@ -47,5 +47,6 @@ clean:
 # Refloat Shaping: slider engine tests (requires Node, not part of the build)
 test:
 	node shaping/test.js ui.qml.in
+	node shaping/test-battery.js ui.qml.in
 
 .PHONY: all clean src test
