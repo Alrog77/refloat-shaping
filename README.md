@@ -10,7 +10,7 @@ See [CHANGES-shaping.md](CHANGES-shaping.md).
 
 Tested on a single board only. Use at your own risk. Official Refloat: [github.com/lukash/refloat](https://github.com/lukash/refloat).
 
-To build: `./build-shaping6.2.sh` (requires `gcc-arm-embedded`, `make`, `vesc_tool`; `make test` runs the slider engine tests with Node).
+To build: `./build-shaping6.3.sh` (requires `gcc-arm-embedded`, `make`, `vesc_tool`; `make test` runs the slider engine tests with Node).
 
 ---
 

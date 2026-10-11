@@ -42,10 +42,7 @@ ok(r0.errors.block.length === 0, "all at 0: nothing blocking");
 ok(r0.changes.torquetilt_angle_limit === 8 && r0.changes.atr_angle_limit === 8, "Response Limit at 8 (default): ATR and Torque Tilt limits at stock 8°");
 
 // 2) everything disabled = nothing
-var rOff = E.compute({}, nico).changes;
-ok(Object.keys(rOff).sort().join() === "booster_mahony_kp,brkbooster_mahony_kp,dynamic_mahony_kp" &&
-   rOff.booster_mahony_kp === 0 && rOff.brkbooster_mahony_kp === 0 && rOff.dynamic_mahony_kp === 0,
-   "all disabled: only Dynamic KP and Boosters written, all off " + JSON.stringify(rOff));
+ok(Object.keys(E.compute({}, nico).changes).length === 0, "all disabled: no parameter written (shaping 6.3)");
 
 // 3) Response Limit: one Max Angle for ATR and Torque Tilt (Torque Tilt held at 8°), monotonic, 0 to 18°
 var prev = -1, rlOnly = true, rlMono = true;
@@ -109,8 +106,13 @@ ok(rS.errors.block.length === 0, "Street: nothing blocking " + rS.errors.block);
 });
 // disabled Feel sliders switch their Booster / Dynamic KP off, whatever the config
 var hot = Object.assign({}, nico, {dynamic_mahony_kp: 1.6, booster_mahony_kp: 1.5, brkbooster_mahony_kp: 0.82});
-var cOff = E.compute({accelFeel: {on: false, pos: 5}, accelFeelSpeed: {on: false, pos: 5}, brakeFeel: {on: false, pos: 10}}, hot).changes;
-ok(cOff.dynamic_mahony_kp === 0 && cOff.booster_mahony_kp === 0 && cOff.brkbooster_mahony_kp === 0, "disabled sliders: Dynamic KP and Boosters off");
+// shaping 6.3: a disabled Feel slider keeps the hand-set value (not written) and the preview says it is still active
+var rHot = E.compute({accelFeel: {on: false, pos: 5}, accelFeelSpeed: {on: false, pos: 5}, brakeFeel: {on: false, pos: 10}, carveTrim: {on: true, pos: 3}}, hot);
+ok(!("dynamic_mahony_kp" in rHot.changes) && !("booster_mahony_kp" in rHot.changes) && !("brkbooster_mahony_kp" in rHot.changes),
+   "disabled Feel sliders: hand-set Dynamic KP and Boosters not written " + JSON.stringify(rHot.changes));
+ok(["Dynamic Pitch KP active (1.60)", "Accel Booster Pitch KP active (1.50)", "Brake Booster Pitch KP active (0.82)"].every(function (t) {
+       return rHot.errors.warn.some(function (w) { return w.indexOf(t) === 0; }); }), "disabled Feel sliders: notes for active values " + rHot.errors.warn.join(" | "));
+ok(E.compute({carveTrim: {on: true, pos: 3}}, nico).errors.warn.length === 0, "disabled Feel sliders, values off: no note");
 // braking stiffness never above 60 (20 x 3), whatever Accel Feel / Brake Feel; equal to 20 x ratio unless at a bound
 posList("accelFeel").forEach(function (a) { posList("brakeFeel").forEach(function (b) {
     var r = E.compute({accelFeel: {on: true, pos: a}, brakeFeel: {on: true, pos: b}}, nico), m = r.merged;

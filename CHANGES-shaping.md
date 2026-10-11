@@ -87,3 +87,9 @@ Based on Neil Bennett ("Any strain on the motor simulates a change in gradient" 
   - "Street" unchanged apart from the Torque Tilt limit: 4° instead of 8°, since Response Limit is 4. Downhill strength now only adds ATR, the regen stays at 0.10.
   - All sliders at max: braking loop 13.2 → 4.8, accel 4.8 → 4.3.
   - The cap can go below stock 0.10 (0.08 at braking stiffness 60): less Torque Tilt tail lift under braking.
+
+## Shaping 6.3 — disabled slider = hands off
+
+- Accel Feel, Accel Feel (speed) and Brake Feel no longer force their Booster target / Dynamic Pitch KP to 0 when disabled (shaping 6.0 did). A disabled slider writes nothing again, so a value set by hand in Refloat Cfg is kept.
+- Instead, the preview shows a note when such a value is still active while its slider is off, e.g. "Brake Booster Pitch KP active (0.82) while Brake Feel is off (set by hand, kept)".
+- The existing check still blocks a Booster target left at or above the effective KP (e.g. after Accel Feel lowered Pitch KP).

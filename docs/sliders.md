@@ -1,11 +1,12 @@
-# Sliders reference (shaping 6.2)
+# Sliders reference (shaping 6.3)
 
 The *Sliders* page (UI only) writes normal Refloat parameters. It adds nothing to the control loop, and every parameter stays available in *Refloat Cfg* for manual fine-tuning.
 
 - Each parameter is **owned by one slider**. A few values are **derived** from several sliders (see below); the preview labels them as such.
 - **0 = stock values** of the `v1.3-mkp_booster` branch, except the two Booster Pitch KP targets, which are active at 95 % of the effective KP at 0.
 - Ranges are limited to what was ridden plus a small margin. Between the listed points, values are interpolated (linear, or geometric where noted).
-- A disabled slider writes nothing, except Accel Feel, Accel Feel (speed) and Brake Feel: when disabled, they switch their Booster target / Dynamic Pitch KP off (0). Slider positions are saved with tunes.
+- **A disabled slider writes nothing**: its parameters are yours to set by hand in *Refloat Cfg*. If a Booster target or the Dynamic Pitch KP is still active while its slider is off, the preview says so ("Brake Booster Pitch KP active (0.82) while Brake Feel is off"). Slider positions are saved with tunes.
+- **A parameter changed by hand** is flagged on its slider ("Differs from current config") with a **Realign** button, which moves the slider to the closest position without writing anything. Writing from an enabled slider sets its parameters back to the slider values, always listed in the preview first.
 
 ## Owned parameters
 
@@ -51,7 +52,7 @@ The preview shows each automatic limit (for example "Downhill strength: Torque T
 
 - Writing only with the board stopped, after a preview listing every changed parameter, its old and new value, its source slider (or "derived from …"), and any automatic limit. Only values that actually change are written.
 - **Blocking**: non-finite value; value outside `settings.xml` bounds; any ATR / Torque Tilt speed below 4 °/s; ATR angle limit above 18°; a Booster target outside [0.8, effective KP); a Torque Tilt loop above its limit (only reachable with hand-set values, otherwise a warning).
-- **Warnings**: Response Limit above 10°; Torque Tilt angle limit above 8° (set by hand); Pitch KP or Dynamic Pitch KP below Roll KP + 0.1.
+- **Warnings**: Booster target or Dynamic Pitch KP active while its slider is off; Response Limit above 10°; Torque Tilt angle limit above 8° (set by hand); Pitch KP or Dynamic Pitch KP below Roll KP + 0.1.
 
 ## Tests
 

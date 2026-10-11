@@ -1825,11 +1825,11 @@ Item {
     // </battery-engine>
     })()
 
-    // ===== Refloat Shaping 6.2: slider engine (UI only, never in the control loop) =====
+    // ===== Refloat Shaping 6.3: slider engine (UI only, never in the control loop) =====
     // Copy of the body of shaping/shaping.js between the markers; test.js checks it is identical.
     property var shapingEngine: (function () {
     // <shaping-engine>
-        var VERSION = "6.2";
+        var VERSION = "6.3";
 
         // Min / max of every parameter written or read (settings.xml)
         var XML = {
@@ -1985,16 +1985,15 @@ Item {
                   ["forceUp", "accelFeel"], "Uphill strength");
 
             // Dynamic Pitch KP: fraction of the final Pitch KP (100 % at 0, 80 % at +10), floor 1.2.
-            // Off (0) at 0 and when the slider is disabled.
+            // Off (0) at 0. A disabled slider writes nothing (hand-set value kept, with a note if active).
             var kpFrom = isOn(state, "accelFeel") ? ["accelFeel"] : [];
-            if (!isOn(state, "accelFeelSpeed")) put("dynamic_mahony_kp", 0, ["accelFeelSpeed"]);
-            else {
+            if (isOn(state, "accelFeelSpeed")) {
                 var s = posOf(state, "accelFeelSpeed");
                 put("dynamic_mahony_kp", s === 0 ? 0 : Math.max(merged.mahony_kp * (1 - 0.02 * s), DYN_FLOOR),
                     ["accelFeelSpeed"].concat(kpFrom));
             }
             // Booster targets, from the effective KP (lower of Pitch KP and Dynamic Pitch KP):
-            // off (0) at -10 and when the slider is disabled; 100 % -> 95 % of it from -10 to 0
+            // off (0) at -10; 100 % -> 95 % of it from -10 to 0
             // (100 % = no effect, so no jump); above 0, accel down to 80 % of it, brake down to 0.82.
             function uniq(a) { return a.filter(function (v, i) { return a.indexOf(v) === i; }); }
             var dynFrom = uniq((src.dynamic_mahony_kp || []).concat(kpFrom));
@@ -2012,14 +2011,19 @@ Item {
             }
             if (isOn(state, "accelFeel"))
                 put("booster_mahony_kp", boost(posOf(state, "accelFeel")), uniq(["accelFeel"].concat(dynFrom)));
-            else put("booster_mahony_kp", 0, ["accelFeel"]);
             if (isOn(state, "brakeFeel"))
                 put("brkbooster_mahony_kp", brkBoost(posOf(state, "brakeFeel")), uniq(["brakeFeel"].concat(dynFrom)));
-            else put("brkbooster_mahony_kp", 0, ["brakeFeel"]);
 
             var diff = {};
             Object.keys(out).forEach(function (key) {
                 if (!fin(cur[key]) || Math.abs(out[key] - cur[key]) > EPS_CHANGE) diff[key] = out[key];
+            });
+            // Disabled Feel slider = hands off: its derived value is not written, but say when it is still active
+            [["accelFeelSpeed", "dynamic_mahony_kp", "Dynamic Pitch KP", "Accel Feel (speed)"],
+             ["accelFeel", "booster_mahony_kp", "Accel Booster Pitch KP", "Accel Feel"],
+             ["brakeFeel", "brkbooster_mahony_kp", "Brake Booster Pitch KP", "Brake Feel"]].forEach(function (d) {
+                if (!isOn(state, d[0]) && fin(merged[d[1]]) && merged[d[1]] > 0)
+                    notes.push(d[2] + " active (" + r2(merged[d[1]]).toFixed(2) + ") while " + d[3] + " is off (set by hand, kept)");
             });
             var errors = check(merged, Object.keys(out));
             errors.warn = notes.concat(errors.warn);
